@@ -45,6 +45,8 @@ app.use("/api/metal-rates", require("./src/routes/metalRate.routes"));
 app.use("/api/diamond-rates", require("./src/routes/diamondRate.routes"));
 app.use("/api/stone-rates", require("./src/routes/stoneRate.routes"));
 
+app.use("/api/c-numbers", require("./src/routes/cNumber.routes"));
+
 app.use(
   "/api/stone-price-charts",
   require("./src/routes/stonePriceChart.routes"),
