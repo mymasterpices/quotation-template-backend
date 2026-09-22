@@ -29,29 +29,25 @@ app.use("/api/prices", require("./src/routes/price.routes"));
 app.use("/api/customers", require("./src/routes/customer.routes"));
 app.use("/api/quotations", require("./src/routes/quotation.routes"));
 app.use("/api/metal-purities", require("./src/routes/metalPurity.routes"));
-
 app.use("/api/diamond-colors", require("./src/routes/diamondColor.routes"));
 app.use(
   "/api/diamond-clarities",
   require("./src/routes/diamondClarity.routes"),
 );
 app.use("/api/diamond-shapes", require("./src/routes/diamondShape.routes"));
-
 app.use("/api/stone-types", require("./src/routes/stoneType.routes"));
 app.use("/api/stone-sizes", require("./src/routes/stoneSize.routes"));
 app.use("/api/stone-qualities", require("./src/routes/stoneQuality.routes"));
-
 app.use("/api/metal-rates", require("./src/routes/metalRate.routes"));
 app.use("/api/diamond-rates", require("./src/routes/diamondRate.routes"));
 app.use("/api/stone-rates", require("./src/routes/stoneRate.routes"));
-
 app.use("/api/c-numbers", require("./src/routes/cNumber.routes"));
-
 app.use(
   "/api/stone-price-charts",
   require("./src/routes/stonePriceChart.routes"),
 );
 
+// --- Health check ---
 app.get("/api/health", (req, res) =>
   res.json({ success: true, message: "API running" }),
 );
