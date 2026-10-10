@@ -4,6 +4,7 @@ const path = require("path");
 const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
+const multer = require("multer");
 
 const connectDB = require("./src/config/db");
 const notFound = require("./src/middleware/notFound");
@@ -15,11 +16,19 @@ const app = express();
 connectDB();
 
 // --- Core middleware ---
-app.use(helmet({ contentSecurityPolicy: false })); // CSP off so Angular assets load cleanly in dev
+app.use(
+  helmet({
+    contentSecurityPolicy: false, // CSP off so Angular assets load cleanly in dev
+    crossOriginResourcePolicy: { policy: "cross-origin" }, // lets <img> load /uploads from another origin
+  }),
+);
 app.use(cors({ origin: process.env.CLIENT_URL || "*" }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
+
+// --- Uploaded images (served before the SPA fallback) ---
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // --- API routes ---
 app.use("/api/metal-purities", require("./src/routes/metalPurity.routes"));
@@ -37,16 +46,37 @@ app.get("/api/health", (req, res) =>
 );
 
 // --- Serve Angular production build ---
-// ng build now outputs into public/browser (relative to this file), e.g.
-// via a custom outputPath in angular.json — not the client/dist/... path
-// Angular 17's default new-build layout produces.
 const clientBuildPath = path.join(__dirname, "public", "browser");
 app.use(express.static(clientBuildPath));
 
-// SPA fallback — anything not matched by /api routes goes to Angular's index.html
+// SPA fallback — skip /api and /uploads so missing files return a real 404
 app.get("/*splat", (req, res, next) => {
-  if (req.originalUrl.startsWith("/api")) return next();
+  if (
+    req.originalUrl.startsWith("/api") ||
+    req.originalUrl.startsWith("/uploads")
+  ) {
+    return next();
+  }
   res.sendFile(path.join(clientBuildPath, "index.html"));
+});
+
+// --- Multer upload errors (must be BEFORE notFound / errorHandler) ---
+app.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    const messages = {
+      LIMIT_FILE_SIZE: "Each image must be 5MB or smaller",
+      LIMIT_FILE_COUNT: "Too many images (max 10)",
+      LIMIT_UNEXPECTED_FILE: "Unexpected file field",
+    };
+    return res.status(400).json({
+      success: false,
+      message: messages[err.code] || err.message,
+    });
+  }
+  if (err.message === "Only JPG and PNG images are allowed") {
+    return res.status(400).json({ success: false, message: err.message });
+  }
+  next(err); // everything else goes to your existing errorHandler
 });
 
 // --- Error handling (must be last) ---

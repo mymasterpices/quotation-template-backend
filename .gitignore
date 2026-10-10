@@ -4,3 +4,6 @@ node_modules/
 .env
 # Angular build output
 public/
+
+#uploads
+src/uploads/
