@@ -1,12 +1,20 @@
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
+// shared pricing snapshot for every priced line
+const pricing = {
+  rate: { type: Number, required: true, min: 0 }, // rate that applied (per ct)
+  rateRange: { type: String }, // e.g. "0.01 - 0.04 ct"
+  amount: { type: Number, required: true, min: 0 }, // final line amount in INR
+};
+
 const diamondSchema = new Schema(
   {
     shape: { type: String, required: true },
     quality: { type: String, required: true },
     weight: { type: Number, required: true },
     pieces: { type: Number, required: true },
+    ...pricing,
   },
   { _id: false },
 );
@@ -14,10 +22,12 @@ const diamondSchema = new Schema(
 const stoneSchema = new Schema(
   {
     type: { type: String, required: true },
-    shape: { type: String }, // optional: the price calc allows a null shape
+    label: { type: String },
+    shape: { type: String },
     quality: { type: String, required: true },
     weight: { type: Number, required: true },
     pieces: { type: Number, required: true },
+    ...pricing,
   },
   { _id: false },
 );
@@ -32,6 +42,7 @@ const imageSchema = new Schema(
   },
   { _id: false },
 );
+
 
 const orderSchema = new Schema(
   {
@@ -49,14 +60,18 @@ const orderSchema = new Schema(
     metal: {
       purity: { type: String, required: true },
       weight: { type: Number, required: true },
+      rate: { type: Number }, // gold rate per gram used
+      amount: { type: Number }, // metal value
     },
     diamonds: [diamondSchema],
     stones: [stoneSchema],
     images: [imageSchema],
 
-    // snapshot of the estimate shown to the customer
     estimate: {
       makingChargePerGram: Number,
+      makingCharge: Number, // makingChargePerGram * metal.weight
+      diamondTotal: Number, // sum of diamonds[].amount
+      stoneTotal: Number, // sum of stones[].amount
       country: { type: String, enum: ["india", "restOfWorld"] },
       countryFactor: Number,
       baseCost: Number,

@@ -1,12 +1,14 @@
 require("dotenv").config();
 const express = require("express");
 const path = require("path");
+const fs = require("fs");
 const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
 const multer = require("multer");
 
 const connectDB = require("./src/config/db");
+const { UPLOAD_DIR } = require("./src/config/paths"); // single source of truth for uploads
 const notFound = require("./src/middleware/notFound");
 const errorHandler = require("./src/middleware/errorHandler");
 
@@ -28,7 +30,10 @@ app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
 
 // --- Uploaded images (served before the SPA fallback) ---
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+console.log("Serving uploads from:", UPLOAD_DIR);
+console.log("Files found:", fs.readdirSync(UPLOAD_DIR).length); // remove once images load
+
+app.use("/uploads", express.static(UPLOAD_DIR));
 
 // --- API routes ---
 app.use("/api/metal-purities", require("./src/routes/metalPurity.routes"));
@@ -49,7 +54,7 @@ app.get("/api/health", (req, res) =>
 const clientBuildPath = path.join(__dirname, "public", "browser");
 app.use(express.static(clientBuildPath));
 
-// SPA fallback — skip /api and /uploads so missing files return a real 404
+// SPA fallback: skip /api and /uploads so missing files return a real 404
 app.get("/*splat", (req, res, next) => {
   if (
     req.originalUrl.startsWith("/api") ||
